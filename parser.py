@@ -1,36 +1,52 @@
-# parser file 
-# import matplotlib
-import re 
-import logging
-import pandas as pd
-import subprocess
-import syn_mointior as sm
-# import engine.cpp as eng
+import re
 
-arp_table =  sm.command 
-def parseing_arp(arp_table=arp_table):
-    arp_entries = []
-    current_interface = None
+LOG_FILE = "sniffer.log"
 
-    for line in arp_table.splitlines():
-        interface_match = re.match(r'Interface:\s+([\d\.]+)\s+---\s+0x[0-9a-fA-F]+', line)
-        if interface_match:
-            current_interface = interface_match.group(1)
-            continue
+def parse_log(file_path):
+    packets = []
+    with open(file_path, "r") as f:
+        lines = f.readlines()
 
-        entry_match = re.match(r'\s*([\d\.]+)\s+([0-9a-fA-F\-]+)\s+(\w+)', line)
-        if entry_match and current_interface:
-            ip_address = entry_match.group(1)
-            mac_address = entry_match.group(2)
-            entry_type = entry_match.group(3)
+    current_packet = {}
+    for line in lines:
+        if "Ether Layer:" in line:
+            match = re.search(r'Ether Layer: (.+) -> (.+), type=(.+)', line)
+            if match:
+                current_packet["src_mac"] = match.group(1)
+                current_packet["dst_mac"] = match.group(2)
+                current_packet["eth_type"] = match.group(3)
+        elif "IP Layer:" in line:
+            match = re.search(r'IP Layer: (.+) -> (.+), proto=(.+), ttl=(.+)', line)
+            if match:
+                current_packet["src_ip"] = match.group(1)
+                current_packet["dst_ip"] = match.group(2)
+                current_packet["protocol"] = match.group(3)
+                current_packet["ttl"] = match.group(4)
+        elif "TCP Layer:" in line:
+            match = re.search(r'TCP Layer: seq=(.+), ack=(.+), flags=(.+)', line)
+            if match:
+                current_packet["tcp_seq"] = match.group(1)
+                current_packet["tcp_ack"] = match.group(2)
+                current_packet["tcp_flags"] = match.group(3)
+        elif "UDP Layer detected" in line:
+            current_packet["udp"] = True
+        elif "ICMP Layer detected" in line:
+            current_packet["icmp"] = True
+        elif "ARP Packet Detected" in line:
+            current_packet["arp"] = True
 
-            arp_entries.append({
-                'Interface': current_interface,
-                'IP Address': ip_address,
-                'MAC Address': mac_address,
-                'Type': entry_type
-            })
+        if "Ether Layer:" in line and current_packet:
+            if current_packet not in packets:
+                packets.append(current_packet)
+            current_packet = {}
 
-    df = pd.DataFrame(arp_entries)
-    return df
+    return packets
 
+def main():
+    parsed_packets = parse_log(LOG_FILE)
+    print(f"Total Packets Parsed: {len(parsed_packets)}\n")
+    for i, pkt in enumerate(parsed_packets, 1):
+        print(f"Packet #{i}: {pkt}")
+
+if __name__ == "__main__":
+    main()
