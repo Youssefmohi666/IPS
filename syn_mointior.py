@@ -6,18 +6,16 @@ import os
 import threading
 import sys
 
-# ========================
+
 # Logging Setup
-# ========================
 logging.basicConfig(
     filename="sniffer.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# ========================
 # Packet Sniffer Class
-# ========================
+
 class PacketSniffer:
 
     def __init__(self, iface=None):
@@ -28,17 +26,13 @@ class PacketSniffer:
         print(Fore.YELLOW + f"[+] Using Interface: {self.iface}" + Style.RESET_ALL)
         print(Fore.GREEN + "[+] Sniffer Ready!" + Style.RESET_ALL)
 
-    # --------------------------
     # Print Layer Information
-    # --------------------------
     def show_packet(self, pkt):
 
         self.packet_count += 1
         print(Fore.CYAN + f"\n[#] Packet #{self.packet_count}" + Style.RESET_ALL)
 
-        # ============================
         # Ethernet Layer
-        # ============================
         if pkt.haslayer(Ether):
             eth = pkt[Ether]
             print(Fore.LIGHTCYAN_EX + 
@@ -46,9 +40,7 @@ class PacketSniffer:
                   + Style.RESET_ALL)
             logging.info(f"Ether Layer: {eth.src} -> {eth.dst}, type={eth.type}")
 
-        # ============================
         # IP Layer
-        # ============================
         if pkt.haslayer(IP):
             ip = pkt[IP]
             print(Fore.LIGHTMAGENTA_EX + 
@@ -59,9 +51,7 @@ class PacketSniffer:
 
             seq_num = None
 
-            # ----------------------------
             # TCP Layer
-            # ----------------------------
             if pkt.haslayer(TCP):
                 tcp = pkt[TCP]
                 seq_num = tcp.seq
@@ -73,9 +63,7 @@ class PacketSniffer:
 
                 logging.info(f"TCP Layer: seq={tcp.seq}, ack={tcp.ack}, flags={tcp.flags}")
 
-            # ----------------------------
             # UDP Layer
-            # ----------------------------
             elif pkt.haslayer(UDP):
                 udp = pkt[UDP]
                 print(Fore.LIGHTGREEN_EX +
@@ -83,9 +71,8 @@ class PacketSniffer:
                       + Style.RESET_ALL)
                 logging.info("UDP Layer detected")
 
-            # ----------------------------
+            
             # ICMP Layer
-            # ----------------------------
             elif pkt.haslayer(ICMP):
                 icmp = pkt[ICMP]
                 print(Fore.LIGHTYELLOW_EX +
@@ -97,9 +84,7 @@ class PacketSniffer:
             # Return structured info
 
 
-        # ============================
         # ARP Layer
-        # ============================
         if pkt.haslayer(ARP):
             arp = pkt[ARP]
             print(Fore.YELLOW +
@@ -120,9 +105,8 @@ class PacketSniffer:
         }
 
         return info
-    # --------------------------
     # Start Sniffing
-    # --------------------------
+    
 #########################################################################3
 Instance = PacketSniffer()
 def start(self):
@@ -130,9 +114,7 @@ def start(self):
         sniff(iface=self.iface, prn=self.show_packet, store=False)
         threading.Thread(target=Instance.return_packet_info).start()
 
-# ========================
 # Main Execution
-# ========================
 if __name__ == "__main__":
     print(Fore.RED + "main monitor interrupted..." + Style.RESET_ALL)
     print(Fore.YELLOW + "starting synced monitor..." + Style.RESET_ALL)
@@ -142,3 +124,4 @@ if __name__ == "__main__":
         Instance.return_packet_info()
     sniffer = PacketSniffer()
     sniffer.start()
+
